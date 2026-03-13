@@ -392,14 +392,35 @@ elif selected_section == "📈 Visualizations":
                                      title=f"Distribution of {selected_col}",
                                      opacity=0.7)
                     fig.update_layout(bargap=0.1)
-                    st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # KDE plot using scipy if available, fallback to histogram
+            try:
+                from scipy import stats
+                # Create KDE using scipy and plotly
+                data = df[selected_col].dropna()
+                kde_x = np.linspace(data.min(), data.max(), 100)
+                kde = stats.gaussian_kde(data)
+                kde_y = kde(kde_x)
                 
-                with col2:
-                    # KDE plot using plotly
-                    fig = ff.create_distplot([df[selected_col].dropna()], [selected_col], 
-                                           show_hist=False, show_rug=False)
-                    fig.update_layout(title=f"Density Plot of {selected_col}")
-                    st.plotly_chart(fig, use_container_width=True)
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=kde_x, y=kde_y, fill='tozeroy', 
+                                        name='KDE', line=dict(color='blue')))
+                fig.update_layout(
+                    title=f"Density Plot of {selected_col}",
+                    xaxis_title=selected_col,
+                    yaxis_title="Density",
+                    showlegend=False
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            except ImportError:
+                # Fallback to histogram if scipy not available
+                fig = px.histogram(df, x=selected_col, nbins=30, 
+                                 title=f"Histogram of {selected_col} (KDE requires scipy)",
+                                 opacity=0.7)
+                st.plotly_chart(fig, use_container_width=True)
+                st.info("💡 Install scipy for KDE plots: `pip install scipy`")
                 
                 # Statistics
                 stats = df[selected_col].describe()
